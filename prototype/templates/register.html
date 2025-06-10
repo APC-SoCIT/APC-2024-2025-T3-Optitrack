@@ -1,27 +1,142 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Register</title>
+    <meta charset="UTF-8">
+    <title>OptiTrack Portal</title>
+    <style>
+        body {
+            background-color: #000;
+            color: #ff4c4c;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        .container {
+            background-color: #d38787;
+            padding: 30px 40px;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(255, 76, 76, 0.4);
+            width: 400px;
+        }
+
+        h2 {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #ff4c4c;
+            text-shadow: 0 0 8px #ff4c4c;
+        }
+
+        .tab {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 20px;
+        }
+
+        .tab button {
+            background-color: #333;
+            color: #ff4c4c;
+            border: none;
+            padding: 10px 20px;
+            cursor: pointer;
+            border-radius: 8px;
+        }
+
+        .tab button.active {
+            background-color: #ff4c4c;
+            color: #fff;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: #ff4c4c;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 10px;
+            border: none;
+            border-radius: 5px;
+        }
+
+        button[type="submit"] {
+            background-color: #ff4c4c;
+            color: #fff;
+            padding: 12px;
+            border: none;
+            width: 100%;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .hidden {
+            display: none;
+        }
+    </style>
 </head>
 <body>
-    <h2>Register</h2>
-    {% with messages = get_flashed_messages() %}
-      {% if messages %}
-        <ul style="color: red;">
-          {% for message in messages %}
-            <li>{{ message }}</li>
-          {% endfor %}
-        </ul>
-      {% endif %}
-    {% endwith %}
-    <form method="POST">
-        <label>Username:</label><br>
-        <input type="text" name="username" required><br><br>
+    <div class="container">
+        <h2>OptiTrack Portal</h2>
+        <div class="tab">
+            <button id="registerTab" class="active" onclick="switchTab('register')">Register</button>
+            <button id="loginTab" onclick="switchTab('login')">Login</button>
+        </div>
 
-        <label>Password:</label><br>
-        <input type="password" name="password" required><br><br>
+        <!-- Register Form -->
+        <form id="registerForm" method="POST" action="/register">
+            <div class="form-group">
+                <label>Username</label>
+                <input type="text" name="username" required>
+            </div>
+            <div class="form-group">
+                <label>Password</label>
+                <input type="password" name="password" required>
+            </div>
+            <button type="submit">Register</button>
+        </form>
 
-        <input type="submit" value="Register">
-    </form>
+        <!-- Login Form -->
+        <form id="loginForm" class="hidden" method="POST" action="/login">
+            <div class="form-group">
+                <label>Username</label>
+                <input type="text" name="username" required>
+            </div>
+            <div class="form-group">
+                <label>Password</label>
+                <input type="password" name="password" required>
+            </div>
+            <button type="submit">Login</button>
+        </form>
+    </div>
+
+    <script>
+        function switchTab(tab) {
+            const registerForm = document.getElementById("registerForm");
+            const loginForm = document.getElementById("loginForm");
+            const registerTab = document.getElementById("registerTab");
+            const loginTab = document.getElementById("loginTab");
+
+            if (tab === 'register') {
+                registerForm.classList.remove("hidden");
+                loginForm.classList.add("hidden");
+                registerTab.classList.add("active");
+                loginTab.classList.remove("active");
+            } else {
+                registerForm.classList.add("hidden");
+                loginForm.classList.remove("hidden");
+                registerTab.classList.remove("active");
+                loginTab.classList.add("active");
+            }
+        }
+    </script>
 </body>
 </html>
