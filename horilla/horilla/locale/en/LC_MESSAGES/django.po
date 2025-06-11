@@ -28124,7 +28124,7 @@ msgid "Help Desk"
 msgstr ""
 
 #: .\templates\sidebar.html:111
-msgid "My Company"
+msgid "CAP Gemini"
 msgstr ""
 
 #: .\templates\sidebar.html:237

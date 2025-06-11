@@ -113,7 +113,7 @@ def update_selected_company(request):
             if emp_company != company:
                 text = "Other Company"
                 if company_id == user_company:
-                    text = "My Company"
+                    text = "CAP Gemini"
                 company = {
                     "company": company.company,
                     "icon": company.icon.url,
@@ -157,7 +157,7 @@ urlpatterns.append(
 
 
 def white_labelling_company(request):
-    white_labelling = getattr(horilla_apps, "WHITE_LABELLING", False)
+    white_labelling = getattr(horilla_apps, "WHITE_LABELLING", True)
     if white_labelling:
         hq = Company.objects.filter(hq=True).last()
         try:
