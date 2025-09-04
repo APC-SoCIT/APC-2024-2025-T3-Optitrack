@@ -16,8 +16,10 @@ A simple web application for employees to file overtime requests and managers to
 
 1. Open `index.html` in a web browser
 2. Use the "Switch Role" button to toggle between Employee and Manager views
-3. As an Employee: Fill out the form to submit overtime requests
+3. As an Employee: Fill out the forms to submit overtime requests and task 
 4. As a Manager: Review and approve/reject pending requests
+5. As a Team Leader : Review and approve/reject pending requests if manager approved the pending request
+6. As an Operation Manager : Review and approve/reject pending requests if team leader approved the pending request
 
 ## Data Storage
 
