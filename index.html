@@ -36,6 +36,9 @@
                 <span id="currentUser">Employee</span>
                 <button id="profileBtn" onclick="showProfile()" style="display: none;">Profile</button>
                 <button id="analyticsBtn" onclick="showAnalytics()" style="display: none;">Analytics</button>
+                <button id="recommendationBtn" onclick="showRecommendations()"
+                    style="display: none;">Recommendations</button>
+                <button id="workflowBtn" onclick="showWorkflow()" style="display: none;">Workflow</button>
                 <button id="logout" onclick="logout()">Logout</button>
             </div>
         </header>
@@ -62,13 +65,27 @@
                 <div id="employeeTasks"></div>
 
                 <h3>My Overtime Requests</h3>
+                <div class="filter-controls">
+                    <input type="date" id="dateFrom" placeholder="From">
+                    <input type="date" id="dateTo" placeholder="To">
+                    <button onclick="filterRequests()">Filter</button>
+                    <button onclick="clearFilters()">Clear</button>
+                </div>
                 <div id="employeeRequests"></div>
+                <div id="pagination"></div>
             </div>
 
             <!-- Manager View -->
             <div id="managerView" class="view">
-                <h2>Pending Approvals</h2>
+                <h2>In Progress Approvals</h2>
+                <div class="filter-controls">
+                    <input type="date" id="managerDateFrom" placeholder="From">
+                    <input type="date" id="managerDateTo" placeholder="To">
+                    <button onclick="filterPendingRequests()">Filter</button>
+                    <button onclick="clearManagerFilters()">Clear</button>
+                </div>
                 <div id="pendingRequests"></div>
+                <div id="managerPagination"></div>
             </div>
 
             <!-- Analytics View -->
@@ -111,6 +128,41 @@
                     <button type="submit">Change Password</button>
                 </form>
 
+                <button onclick="backToMain()">Back</button>
+            </div>
+
+            <!-- Recommendation View -->
+            <div id="recommendationView" class="view">
+                <h2>Employee Recommendations</h2>
+
+                <h3>Submit Recommendation</h3>
+                <form id="recommendationForm">
+                    <input type="text" id="recommendeeUsername" placeholder="Employee Username" required>
+                    <select id="recommendationType" required>
+                        <option value="">Select Recommendation Type</option>
+                        <option value="promotion">Promotion</option>
+                        <option value="recognition">Recognition</option>
+                    </select>
+                    <textarea id="recommendationReason"
+                        placeholder="Reason for recommendation (based on overtime and task performance)"
+                        required></textarea>
+                    <button type="submit">Submit Recommendation</button>
+                </form>
+
+                <h3>In Progress Recommendations</h3>
+                <div id="pendingRecommendations"></div>
+
+                <h3>My Recommendations</h3>
+                <div id="myRecommendations"></div>
+
+                <button onclick="backToMain()">Back</button>
+            </div>
+
+            <!-- Workflow View -->
+            <div id="workflowView" class="view">
+                <h2>Workflow Overview</h2>
+                <div id="workflowStats"></div>
+                <div id="workflowRequests"></div>
                 <button onclick="backToMain()">Back</button>
             </div>
         </main>
