@@ -4,6 +4,10 @@ let overtimeRequests =
     JSON.parse(localStorage.getItem("overtimeRequests")) || [];
 let tasks = JSON.parse(localStorage.getItem("tasks")) || [];
 let editingTaskId = null;
+let currentPage = 1;
+let itemsPerPage = 5;
+let managerCurrentPage = 1;
+let recommendations = JSON.parse(localStorage.getItem("recommendations")) || [];
 
 // Initialize app
 document.addEventListener("DOMContentLoaded", function () {
@@ -53,6 +57,14 @@ function loginUser(username, role) {
         role === "manager" || role === "operationalmanager"
             ? "inline-block"
             : "none";
+    document.getElementById("recommendationBtn").style.display =
+        role === "teamleader" || role === "operationalmanager"
+            ? "inline-block"
+            : "none";
+    document.getElementById("workflowBtn").style.display =
+        role === "teamleader" || role === "manager" || role === "operationalmanager"
+            ? "inline-block"
+            : "none";
 
     if (!document.getElementById("overtimeForm").hasEventListener) {
         document
@@ -67,6 +79,9 @@ function loginUser(username, role) {
         document
             .getElementById("passwordForm")
             .addEventListener("submit", changePassword);
+        document
+            .getElementById("recommendationForm")
+            .addEventListener("submit", submitRecommendation);
         document.getElementById("overtimeForm").hasEventListener = true;
     }
     loadProfile();
@@ -97,6 +112,8 @@ function updateView() {
         );
     document.getElementById("profileView").classList.remove("active");
     document.getElementById("analyticsView").classList.remove("active");
+    document.getElementById("recommendationView").classList.remove("active");
+    document.getElementById("workflowView").classList.remove("active");
 
     if (currentRole === "employee") {
         displayEmployeeTasks();
@@ -110,6 +127,8 @@ function showProfile() {
     document.getElementById("employeeView").classList.remove("active");
     document.getElementById("managerView").classList.remove("active");
     document.getElementById("analyticsView").classList.remove("active");
+    document.getElementById("recommendationView").classList.remove("active");
+    document.getElementById("workflowView").classList.remove("active");
     document.getElementById("profileView").classList.add("active");
 }
 
@@ -117,8 +136,30 @@ function showAnalytics() {
     document.getElementById("employeeView").classList.remove("active");
     document.getElementById("managerView").classList.remove("active");
     document.getElementById("profileView").classList.remove("active");
+    document.getElementById("recommendationView").classList.remove("active");
+    document.getElementById("workflowView").classList.remove("active");
     document.getElementById("analyticsView").classList.add("active");
     generateAnalytics();
+}
+
+function showRecommendations() {
+    document.getElementById("employeeView").classList.remove("active");
+    document.getElementById("managerView").classList.remove("active");
+    document.getElementById("profileView").classList.remove("active");
+    document.getElementById("analyticsView").classList.remove("active");
+    document.getElementById("workflowView").classList.remove("active");
+    document.getElementById("recommendationView").classList.add("active");
+    displayRecommendations();
+}
+
+function showWorkflow() {
+    document.getElementById("employeeView").classList.remove("active");
+    document.getElementById("managerView").classList.remove("active");
+    document.getElementById("profileView").classList.remove("active");
+    document.getElementById("analyticsView").classList.remove("active");
+    document.getElementById("recommendationView").classList.remove("active");
+    document.getElementById("workflowView").classList.add("active");
+    displayWorkflow();
 }
 
 function backToMain() {
@@ -182,18 +223,38 @@ function submitOvertimeRequest(e) {
 }
 
 function displayEmployeeRequests() {
+    const dateFrom = document.getElementById("dateFrom").value;
+    const dateTo = document.getElementById("dateTo").value;
+
+    let filtered = overtimeRequests.filter((req) => req.user === currentUser);
+
+    if (dateFrom) filtered = filtered.filter((req) => req.date >= dateFrom);
+    if (dateTo) filtered = filtered.filter((req) => req.date <= dateTo);
+
+    const totalPages = Math.ceil(filtered.length / itemsPerPage);
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const paginatedRequests = filtered.slice(
+        startIndex,
+        startIndex + itemsPerPage
+    );
+
     const container = document.getElementById("employeeRequests");
     container.innerHTML = "";
 
-    overtimeRequests.forEach((request) => {
+    paginatedRequests.forEach((request) => {
         const card = createRequestCard(request, false);
         container.appendChild(card);
+    });
+
+    displayPagination("pagination", currentPage, totalPages, (page) => {
+        currentPage = page;
+        displayEmployeeRequests();
     });
 }
 
 function displayPendingRequests() {
-    const container = document.getElementById("pendingRequests");
-    container.innerHTML = "";
+    const dateFrom = document.getElementById("managerDateFrom").value;
+    const dateTo = document.getElementById("managerDateTo").value;
 
     let pendingRequests;
     if (currentRole === "teamleader") {
@@ -206,14 +267,39 @@ function displayPendingRequests() {
         );
     } else if (currentRole === "operationalmanager") {
         pendingRequests = overtimeRequests.filter(
-            (req) => req.status === "manager-approved"
+            (req) => req.status === "pending" || req.status === "team-approved" || req.status === "manager-approved"
         );
     }
 
-    pendingRequests.forEach((request) => {
+    if (dateFrom)
+        pendingRequests = pendingRequests.filter((req) => req.date >= dateFrom);
+    if (dateTo)
+        pendingRequests = pendingRequests.filter((req) => req.date <= dateTo);
+
+    const totalPages = Math.ceil(pendingRequests.length / itemsPerPage);
+    const startIndex = (managerCurrentPage - 1) * itemsPerPage;
+    const paginatedRequests = pendingRequests.slice(
+        startIndex,
+        startIndex + itemsPerPage
+    );
+
+    const container = document.getElementById("pendingRequests");
+    container.innerHTML = "";
+
+    paginatedRequests.forEach((request) => {
         const card = createRequestCard(request, true);
         container.appendChild(card);
     });
+
+    displayPagination(
+        "managerPagination",
+        managerCurrentPage,
+        totalPages,
+        (page) => {
+            managerCurrentPage = page;
+            displayPendingRequests();
+        }
+    );
 }
 
 function createRequestCard(request, showApprovalButtons) {
@@ -224,12 +310,45 @@ function createRequestCard(request, showApprovalButtons) {
         ? getEmployeeTasksForDate(request.user || "Unknown", request.date)
         : "";
 
+    const approverInfo =
+        !showApprovalButtons &&
+        (request.teamLeaderApprover ||
+            request.managerApprover ||
+            request.operationalManagerApprover)
+            ? `<p><strong>Approved by:</strong> ${[
+                  request.teamLeaderApprover,
+                  request.managerApprover,
+                  request.operationalManagerApprover,
+              ]
+                  .filter(Boolean)
+                  .join(", ")}${request.directApproval ? " (Direct Approval)" : ""}</p>`
+            : "";
+
+    const approvalButtons = showApprovalButtons
+        ? currentRole === "operationalmanager"
+            ? `
+            <div class="approval-buttons">
+                <button class="approve" onclick="approveRequest(${request.id})">Normal Approve</button>
+                <button class="direct-approve" onclick="directApprove(${request.id})">Direct Approve</button>
+                <button class="reject" onclick="rejectRequest(${request.id})">Reject</button>
+            </div>
+        `
+            : `
+            <div class="approval-buttons">
+                <button class="approve" onclick="approveRequest(${request.id})">Approve</button>
+                <button class="reject" onclick="rejectRequest(${request.id})">Reject</button>
+            </div>
+        `
+        : "";
+
     card.innerHTML = `
         <div class="request-header">
             <strong>${request.date}</strong>
-            <span class="status ${
-                request.status
-            }">${request.status.toUpperCase()}</span>
+            <span class="status ${request.status}">${
+        request.status === "pending"
+            ? "IN PROGRESS"
+            : request.status.toUpperCase()
+    }</span>
         </div>
         <p><strong>Employee:</strong> ${request.user || "Unknown"}</p>
         <p><strong>Hours:</strong> ${request.hours}</p>
@@ -237,17 +356,9 @@ function createRequestCard(request, showApprovalButtons) {
         <p><strong>Submitted:</strong> ${new Date(
             request.submittedAt
         ).toLocaleDateString()}</p>
+        ${approverInfo}
         ${employeeTasks}
-        ${
-            showApprovalButtons
-                ? `
-            <div class="approval-buttons">
-                <button class="approve" onclick="approveRequest(${request.id})">Approve</button>
-                <button class="reject" onclick="rejectRequest(${request.id})">Reject</button>
-            </div>
-        `
-                : ""
-        }
+        ${approvalButtons}
     `;
 
     return card;
@@ -258,16 +369,19 @@ function approveRequest(id) {
     if (request) {
         if (currentRole === "teamleader") {
             request.status = "team-approved";
+            request.teamLeaderApprover = currentUser;
             alert(
                 "Request approved by team leader. Awaiting team manager approval."
             );
         } else if (currentRole === "manager") {
             request.status = "manager-approved";
+            request.managerApprover = currentUser;
             alert(
                 "Request approved by team manager. Awaiting operational manager approval."
             );
         } else if (currentRole === "operationalmanager") {
             request.status = "approved";
+            request.operationalManagerApprover = currentUser;
             alert("Request finally approved!");
         }
         localStorage.setItem(
@@ -275,6 +389,21 @@ function approveRequest(id) {
             JSON.stringify(overtimeRequests)
         );
         displayPendingRequests();
+    }
+}
+
+function directApprove(id) {
+    const request = overtimeRequests.find((req) => req.id === id);
+    if (request) {
+        request.status = "approved";
+        request.operationalManagerApprover = currentUser;
+        request.directApproval = true;
+        localStorage.setItem(
+            "overtimeRequests",
+            JSON.stringify(overtimeRequests)
+        );
+        displayPendingRequests();
+        alert("Request directly approved by Operations Manager!");
     }
 }
 
@@ -487,4 +616,275 @@ function isTaskLocked(date) {
             req.date === date &&
             req.status === "approved"
     );
+}
+
+function displayPagination(containerId, currentPage, totalPages, onPageChange) {
+    const container = document.getElementById(containerId);
+    if (totalPages <= 1) {
+        container.innerHTML = "";
+        return;
+    }
+
+    let html = "<div class='pagination'>";
+
+    if (currentPage > 1) {
+        html += `<button onclick="(${onPageChange})(${
+            currentPage - 1
+        })">Previous</button>`;
+    }
+
+    for (let i = 1; i <= totalPages; i++) {
+        html += `<button class="${
+            i === currentPage ? "active" : ""
+        }" onclick="(${onPageChange})(${i})">${i}</button>`;
+    }
+
+    if (currentPage < totalPages) {
+        html += `<button onclick="(${onPageChange})(${
+            currentPage + 1
+        })">Next</button>`;
+    }
+
+    html += "</div>";
+    container.innerHTML = html;
+}
+
+function filterRequests() {
+    currentPage = 1;
+    displayEmployeeRequests();
+}
+
+function clearFilters() {
+    document.getElementById("dateFrom").value = "";
+    document.getElementById("dateTo").value = "";
+    currentPage = 1;
+    displayEmployeeRequests();
+}
+
+function filterPendingRequests() {
+    managerCurrentPage = 1;
+    displayPendingRequests();
+}
+
+function clearManagerFilters() {
+    document.getElementById("managerDateFrom").value = "";
+    document.getElementById("managerDateTo").value = "";
+    managerCurrentPage = 1;
+    displayPendingRequests();
+}
+
+function submitRecommendation(e) {
+    e.preventDefault();
+
+    const recommendeeUsername = document.getElementById(
+        "recommendeeUsername"
+    ).value;
+    const type = document.getElementById("recommendationType").value;
+    const reason = document.getElementById("recommendationReason").value;
+
+    const recommendation = {
+        id: Date.now(),
+        recommendee: recommendeeUsername,
+        recommender: currentUser,
+        recommenderRole: currentRole,
+        type: type,
+        reason: reason,
+        status: "pending",
+        submittedAt: new Date().toISOString(),
+    };
+
+    recommendations.push(recommendation);
+    localStorage.setItem("recommendations", JSON.stringify(recommendations));
+
+    document.getElementById("recommendationForm").reset();
+    displayRecommendations();
+    alert("Recommendation submitted successfully!");
+}
+
+function displayRecommendations() {
+    displayPendingRecommendations();
+    displayMyRecommendations();
+}
+
+function displayPendingRecommendations() {
+    const container = document.getElementById("pendingRecommendations");
+    let pendingRecs = [];
+
+    if (currentRole === "manager") {
+        pendingRecs = recommendations.filter(
+            (rec) =>
+                rec.status === "pending" && rec.recommenderRole === "teamleader"
+        );
+    } else if (currentRole === "operationalmanager") {
+        pendingRecs = recommendations.filter(
+            (rec) =>
+                rec.status === "pending" && rec.recommenderRole === "manager"
+        );
+    }
+
+    container.innerHTML = pendingRecs
+        .map(
+            (rec) => `
+        <div class="recommendation-card">
+            <div class="rec-header">
+                <strong>${rec.recommendee}</strong>
+                <span class="status pending">In Progress</span>
+            </div>
+            <p><strong>Type:</strong> ${rec.type}</p>
+            <p><strong>Recommended by:</strong> ${rec.recommender} (${
+                rec.recommenderRole
+            })</p>
+            <p><strong>Reason:</strong> ${rec.reason}</p>
+            <p><strong>Submitted:</strong> ${new Date(
+                rec.submittedAt
+            ).toLocaleDateString()}</p>
+            <div class="approval-buttons">
+                <button class="approve" onclick="approveRecommendation(${
+                    rec.id
+                })">Approve</button>
+                <button class="reject" onclick="rejectRecommendation(${
+                    rec.id
+                })">Reject</button>
+            </div>
+        </div>
+    `
+        )
+        .join("");
+}
+
+function displayMyRecommendations() {
+    const container = document.getElementById("myRecommendations");
+    const myRecs = recommendations.filter(
+        (rec) => rec.recommender === currentUser
+    );
+
+    container.innerHTML = myRecs
+        .map(
+            (rec) => `
+        <div class="recommendation-card">
+            <div class="rec-header">
+                <strong>${rec.recommendee}</strong>
+                <span class="status ${
+                    rec.status
+                }">${rec.status.toUpperCase()}</span>
+            </div>
+            <p><strong>Type:</strong> ${rec.type}</p>
+            <p><strong>Reason:</strong> ${rec.reason}</p>
+            <p><strong>Submitted:</strong> ${new Date(
+                rec.submittedAt
+            ).toLocaleDateString()}</p>
+        </div>
+    `
+        )
+        .join("");
+}
+
+function approveRecommendation(id) {
+    const rec = recommendations.find((r) => r.id === id);
+    if (rec) {
+        rec.status = "approved";
+        rec.approver = currentUser;
+        localStorage.setItem(
+            "recommendations",
+            JSON.stringify(recommendations)
+        );
+        displayRecommendations();
+        alert("Recommendation approved!");
+    }
+}
+
+function rejectRecommendation(id) {
+    const rec = recommendations.find((r) => r.id === id);
+    if (rec) {
+        rec.status = "rejected";
+        rec.approver = currentUser;
+        localStorage.setItem(
+            "recommendations",
+            JSON.stringify(recommendations)
+        );
+        displayRecommendations();
+        alert("Recommendation rejected!");
+    }
+}
+
+function displayWorkflow() {
+    const stats = getWorkflowStats();
+    const requests = getWorkflowRequests();
+    
+    document.getElementById("workflowStats").innerHTML = `
+        <div class="workflow-stats">
+            <div class="stat-card">
+                <h3>Total Requests</h3>
+                <div class="stat-number">${stats.total}</div>
+            </div>
+            <div class="stat-card">
+                <h3>Approved</h3>
+                <div class="stat-number approved">${stats.approved}</div>
+            </div>
+            <div class="stat-card">
+                <h3>Rejected</h3>
+                <div class="stat-number rejected">${stats.rejected}</div>
+            </div>
+            <div class="stat-card">
+                <h3>In Progress</h3>
+                <div class="stat-number pending">${stats.pending}</div>
+            </div>
+        </div>
+    `;
+    
+    document.getElementById("workflowRequests").innerHTML = requests.map(req => `
+        <div class="workflow-request">
+            <div class="request-header">
+                <strong>${req.user} - ${req.date}</strong>
+                <span class="status ${req.status}">${req.status.toUpperCase()}</span>
+            </div>
+            <p><strong>Hours:</strong> ${req.hours}</p>
+            <p><strong>Reason:</strong> ${req.reason}</p>
+            <p><strong>Submitted:</strong> ${new Date(req.submittedAt).toLocaleDateString()}</p>
+        </div>
+    `).join("");
+}
+
+function getWorkflowStats() {
+    let visibleRequests = [];
+    
+    if (currentRole === "operationalmanager") {
+        visibleRequests = overtimeRequests;
+    } else if (currentRole === "manager") {
+        visibleRequests = overtimeRequests.filter(req => 
+            req.status === "pending" || req.status === "team-approved" || 
+            req.status === "manager-approved" || req.status === "approved" || req.status === "rejected"
+        );
+    } else if (currentRole === "teamleader") {
+        visibleRequests = overtimeRequests.filter(req => 
+            req.status === "pending" || req.status === "team-approved" || 
+            req.status === "approved" || req.status === "rejected"
+        );
+    }
+    
+    return {
+        total: visibleRequests.length,
+        approved: visibleRequests.filter(req => req.status === "approved").length,
+        rejected: visibleRequests.filter(req => req.status === "rejected").length,
+        pending: visibleRequests.filter(req => 
+            req.status === "pending" || req.status === "team-approved" || req.status === "manager-approved"
+        ).length
+    };
+}
+
+function getWorkflowRequests() {
+    if (currentRole === "operationalmanager") {
+        return overtimeRequests.slice(-20);
+    } else if (currentRole === "manager") {
+        return overtimeRequests.filter(req => 
+            req.status === "pending" || req.status === "team-approved" || 
+            req.status === "manager-approved" || req.status === "approved" || req.status === "rejected"
+        ).slice(-20);
+    } else if (currentRole === "teamleader") {
+        return overtimeRequests.filter(req => 
+            req.status === "pending" || req.status === "team-approved" || 
+            req.status === "approved" || req.status === "rejected"
+        ).slice(-20);
+    }
+    return [];
 }
