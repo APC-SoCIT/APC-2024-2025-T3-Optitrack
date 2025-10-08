@@ -115,6 +115,7 @@ form button {
 
 .approve { background: #27ae60; color: white; }
 .reject { background: #e74c3c; color: white; }
+.direct-approve { background: #e67e22; color: white; }
 
 /* Login Styles */
 .login-container {
@@ -180,7 +181,7 @@ form button {
     color: #2c3e50;
 }
 
-#analyticsBtn {
+#analyticsBtn, #recommendationBtn {
     background: #9b59b6;
 }
 
@@ -329,4 +330,61 @@ form button {
 
 .task-summary:last-child {
     border-bottom: none;
+}
+
+/* Workflow Styles */
+.workflow-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.stat-card {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 8px;
+    text-align: center;
+    border: 1px solid #ddd;
+}
+
+.stat-card h3 {
+    margin-bottom: 0.5rem;
+    color: #2c3e50;
+    font-size: 0.9rem;
+}
+
+.stat-number {
+    font-size: 2rem;
+    font-weight: bold;
+    color: #2c3e50;
+}
+
+.stat-number.approved {
+    color: #27ae60;
+}
+
+.stat-number.rejected {
+    color: #e74c3c;
+}
+
+.stat-number.pending {
+    color: #f39c12;
+}
+
+.workflow-request {
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+}
+
+#workflowBtn {
+    background: #8e44ad;
+}
+
+.direct-approve {
+    background: #e67e22 !important;
+    color: white !important;
 }
